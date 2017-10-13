@@ -62,8 +62,8 @@ public class CoolHashTest {
 		CoolHashClient chc = BeanContext.getCoolHashClient(args[0], Integer.parseInt(args[1]));
 		try {
 			long start = System.currentTimeMillis();
-			CoolHashResult hr = chc.find("*", ValueFilter.contains("888888"), true);// ģ����ѯ
-			CoolHashMap chmb = hr.nextBatch(50);// ��ҳ��ȡǰ50��
+			CoolHashResult hr = chc.find("*", ValueFilter.contains("888888"), true);
+			CoolHashMap chmb = hr.nextBatch(50);
 			System.out.println("find:" + chmb);
 			System.out.println("find time taken in MS--" + (System.currentTimeMillis() - start));
 		} catch (Exception ex) {
@@ -73,8 +73,8 @@ public class CoolHashTest {
 	}
 
 	public static void main(String[] args) {
-		batchTest(args);// ��������
-		// findTest(args);//��ѯ����
-		// singleTest(args);//��������
+		batchTest(args);
+		// findTest(args);
+		// singleTest(args);
 	}
 }

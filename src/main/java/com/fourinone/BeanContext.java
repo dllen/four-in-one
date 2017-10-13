@@ -62,8 +62,8 @@ public class BeanContext extends ServiceContext {
 		startPark(host, port, parkcfg);
 	}
 
-	public static void startPark()// String configfile
-	{
+	public static void startPark() {
+		// String configfile
 		String[][] parkcfg = ConfigContext.getParkConfig();
 		startPark(parkcfg[0][0], Integer.parseInt(parkcfg[0][1]), parkcfg);
 	}

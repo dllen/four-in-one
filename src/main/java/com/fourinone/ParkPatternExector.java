@@ -3,106 +3,100 @@ package com.fourinone;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.List;
 
-public class ParkPatternExector
-{
-	static boolean newParkFlag=false;
+public class ParkPatternExector {
+	static boolean newParkFlag = false;
 	private static ParkLocal pl;
 	private static LinkedBlockingQueue<ParkPatternBean> bq = new LinkedBlockingQueue<ParkPatternBean>();
-	private static AsyncExector aeLastest=null;
-	
-	static ParkLocal getParkLocal()
-	{
-		if(pl==null)
-		{
-			/*String[][] servers = {{"localhost","1888"},{"localhost","1889"}};//get from config.xml
-			pl = BeanContext.getPark(servers[0][0], Integer.parseInt(servers[0][1]), servers);*/
+	private static AsyncExector aeLastest = null;
+
+	static ParkLocal getParkLocal() {
+		if (pl == null) {
+			/*
+			 * String[][] servers =
+			 * {{"localhost","1888"},{"localhost","1889"}};//get from config.xml
+			 * pl = BeanContext.getPark(servers[0][0],
+			 * Integer.parseInt(servers[0][1]), servers);
+			 */
 			pl = BeanContext.getPark();
 		}
 		return pl;
 	}
-	
-	static ParkLocal getParkLocal(String host, int port){
-		if(newParkFlag)
-			return BeanContext.getPark(host, port);//new pl everytime 14.10.16
+
+	static ParkLocal getParkLocal(String host, int port) {
+		if (newParkFlag)
+			return BeanContext.getPark(host, port);// new pl everytime 14.10.16
 		else
-			return pl=pl==null?BeanContext.getPark(host, port):pl;
+			return pl = pl == null ? BeanContext.getPark(host, port) : pl;
 	}
-	
-	//static void resetParkLocal(){pl=null;}//14.10.17
-	
-	static List<ObjectBean> getWorkerTypeList(String workerType)
-	{
-		return getParkLocal().get("_worker_"+workerType);
+
+	// static void resetParkLocal(){pl=null;}//14.10.17
+
+	static List<ObjectBean> getWorkerTypeList(String workerType) {
+		return getParkLocal().get("_worker_" + workerType);
 	}
-	
-	static List<ObjectBean> getWorkerTypeList(String parkhost, int parkport, String workerType)
-	{
-		return getParkLocal(parkhost, parkport).get("_worker_"+workerType);
+
+	static List<ObjectBean> getWorkerTypeList(String parkhost, int parkport, String workerType) {
+		return getParkLocal(parkhost, parkport).get("_worker_" + workerType);
 	}
-	
-	static ObjectBean createWorkerTypeNode(String workerType, String nodevalue)
-	{
-		return getParkLocal().create("_worker_"+workerType, ParkGroup.getKeyId(), nodevalue, AuthPolicy.OP_ALL, true);
+
+	static ObjectBean createWorkerTypeNode(String workerType, String nodevalue) {
+		return getParkLocal().create("_worker_" + workerType, ParkGroup.getKeyId(), nodevalue, AuthPolicy.OP_ALL, true);
 	}
-	
-	static ObjectBean createWorkerTypeNode(String parkhost, int parkport, String workerType, String nodevalue)
-	{
-		return getParkLocal(parkhost, parkport).create("_worker_"+workerType, ParkGroup.getKeyId(), nodevalue, AuthPolicy.OP_ALL, true);
+
+	static ObjectBean createWorkerTypeNode(String parkhost, int parkport, String workerType, String nodevalue) {
+		return getParkLocal(parkhost, parkport).create("_worker_" + workerType, ParkGroup.getKeyId(), nodevalue,
+				AuthPolicy.OP_ALL, true);
 	}
-	
-	static ObjectBean getLastestObjectBean(ObjectBean ob)
-	{
+
+	static ObjectBean getLastestObjectBean(ObjectBean ob) {
 		String[] keyarr = ParkObjValue.getDomainNode(ob.getName());
-		while(true)
-		{
+		while (true) {
 			ObjectBean curob = getParkLocal().getLastest(keyarr[0], keyarr[1], ob);
-			if(curob!=null)
+			if (curob != null)
 				return curob;
 		}
-			
+
 	}
-	
-	static ObjectBean updateObjectBean(ObjectBean ob, WareHouse wh)
-	{
+
+	static ObjectBean updateObjectBean(ObjectBean ob, WareHouse wh) {
 		String[] keyarr = ParkObjValue.getDomainNode(ob.getName());
 		return getParkLocal().update(keyarr[0], keyarr[1], wh);
 	}
-	
-	static void append(ParkPatternBean ppb)
-	{
-		try{
+
+	static void append(ParkPatternBean ppb) {
+		try {
 			ObjectBean ob = getParkLocal().update(ppb.domain, ppb.node, ppb.inhouse);
 			ppb.thisversion = ob;
 			bq.put(ppb);
-			
-			if(aeLastest==null){
+
+			if (aeLastest == null) {
 				LogUtil.fine("", "", "AsyncExector aeLastest:");
-				(aeLastest = new AsyncExector(){
-					public void task(){
-						try{
-							while(true){
+				(aeLastest = new AsyncExector() {
+					public void task() {
+						try {
+							while (true) {
 								ParkPatternBean curPpb = bq.take();
-								//System.out.println("ParkPatternExector bq.size():"+bq.size());
-								ObjectBean curversion = getParkLocal().getLastest(curPpb.domain, curPpb.node, curPpb.thisversion);
-								if(curversion!=null)
-								{
+								// System.out.println("ParkPatternExector
+								// bq.size():"+bq.size());
+								ObjectBean curversion = getParkLocal().getLastest(curPpb.domain, curPpb.node,
+										curPpb.thisversion);
+								if (curversion != null) {
 									curPpb.thisversion = curversion;
 									curPpb.rx.setRecall(false);
-									curPpb.outhouse.putAll((WareHouse)curversion.toObject());
-									//curPpb.outhouse.setReady(true);
+									curPpb.outhouse.putAll((WareHouse) curversion.toObject());
+									// curPpb.outhouse.setReady(true);
 									curPpb.outhouse.setReady(FileResult.READY);
-								}
-								else
+								} else
 									bq.put(curPpb);
 							}
-						}catch(Exception e){
+						} catch (Exception e) {
 							LogUtil.info("AsyncExector", "append aeLastest", e);
-							//e.printStackTrace();
+							// e.printStackTrace();
 						}
 					}
 				}).run();
 			}
-		}catch(Exception e){
+		} catch (Exception e) {
 			LogUtil.info("ParkPatternExector", "append", e);
 		}
 	}
