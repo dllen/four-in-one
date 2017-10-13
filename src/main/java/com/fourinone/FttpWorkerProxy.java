@@ -1,6 +1,5 @@
 package com.fourinone;
 
-import java.rmi.RemoteException;
 import java.io.File;
 import java.net.URI;
 
